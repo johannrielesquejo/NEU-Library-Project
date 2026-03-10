@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NEU Library Visitor Log</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
     --green: #1a6b2f;
@@ -1047,40 +1048,19 @@
 
 <script>
 // ════════════════════════════════════════
+// SUPABASE CONFIG
+// ════════════════════════════════════════
+const SUPABASE_URL = 'https://qkkgmxpzwdhixcbqwhqf.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFra2dteHB6d2RoaXhjYnF3aHFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxNDIxMDcsImV4cCI6MjA4ODcxODEwN30.fmA0cLTVEskzQay3GwV2pJDmTurypIKNRB22NsmWJUs';
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ════════════════════════════════════════
 // STATE
 // ════════════════════════════════════════
 let loginMode = 'email';
 let selectedPurpose = '';
-let pendingAction = null; // { userId, action }
-
-// Supabase config - replace with actual project URL and anon key
-const SUPABASE_URL = 'https://qkkgmxpzwdhixcbqwhqf.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFra2dteHB6d2RoaXhjYnF3aHFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxNDIxMDcsImV4cCI6MjA4ODcxODEwN30.fmA0cLTVEskzQay3GwV2pJDmTurypIKNRB22NsmWJUs';
-
-// In-memory data (replace with Supabase calls)
-let visitors = JSON.parse(localStorage.getItem('neu_visitors') || '[]');
-let blockedUsers = JSON.parse(localStorage.getItem('neu_blocked') || '[]');
-
-// Demo data seeded on first load
-if (visitors.length === 0) {
-  const now = new Date();
-  const demoData = [
-    { id: 'demo1', name: null, identifier: '24-12971-216', college: 'College of Information and Computing Studies', purpose: 'Research', method: 'RFID', timestamp: new Date(now - 2*3600000).toISOString(), blocked: false },
-    { id: 'demo2', name: 'juan.delacruz@neu.edu.ph', identifier: 'juan.delacruz@neu.edu.ph', college: 'College of Business Administration', purpose: 'Studying', method: 'Email', timestamp: new Date(now - 5*3600000).toISOString(), blocked: false },
-    { id: 'demo3', name: null, identifier: '24-00123-001', college: 'College of Education', purpose: 'Reading', method: 'RFID', timestamp: new Date(now - 86400000).toISOString(), blocked: false },
-    { id: 'demo4', name: 'maria.santos@neu.edu.ph', identifier: 'maria.santos@neu.edu.ph', college: 'College of Nursing and Allied Health Sciences', purpose: 'Use of Computer', method: 'Email', timestamp: new Date(now - 2*86400000).toISOString(), blocked: false },
-    { id: 'demo5', name: null, identifier: '23-55432-109', college: 'College of Engineering and Architecture', purpose: 'Studying', method: 'RFID', timestamp: new Date(now - 3*86400000).toISOString(), blocked: false },
-    { id: 'demo6', name: 'pedro.reyes@neu.edu.ph', identifier: 'pedro.reyes@neu.edu.ph', college: 'College of Criminal Justice Education', purpose: 'Research', method: 'Email', timestamp: new Date(now - 7*86400000).toISOString(), blocked: false },
-    { id: 'demo7', name: 'ana.lim@neu.edu.ph', identifier: 'ana.lim@neu.edu.ph', college: 'College of Tourism and Hospitality Management', purpose: 'Reading', method: 'Email', timestamp: new Date(now - 10*86400000).toISOString(), blocked: false },
-  ];
-  visitors = demoData;
-  saveData();
-}
-
-function saveData() {
-  localStorage.setItem('neu_visitors', JSON.stringify(visitors));
-  localStorage.setItem('neu_blocked', JSON.stringify(blockedUsers));
-}
+let pendingAction = null;
 
 // ════════════════════════════════════════
 // PAGE NAVIGATION
@@ -1107,7 +1087,7 @@ function selectPurpose(btn, purpose) {
   btn.classList.add('selected');
 }
 
-function handleVisitorLogin() {
+async function handleVisitorLogin() {
   const college = document.getElementById('collegeSelect').value;
   let identifier = '';
 
@@ -1124,35 +1104,56 @@ function handleVisitorLogin() {
   if (!college) return showToast('Please select your college.', true);
   if (!selectedPurpose) return showToast('Please select your purpose of visit.', true);
 
-  // Check if blocked
-  if (blockedUsers.includes(identifier)) {
-    return showToast('⛔ Your access has been blocked. Please contact the librarian.', true);
+  showToast('Logging you in...');
+
+  try {
+    // 1. Get college id
+    const { data: collegeRow } = await sb.from('colleges').select('id').eq('name', college).single();
+    if (!collegeRow) return showToast('College not found. Please run the SQL schema.', true);
+
+    // 2. Find or create visitor
+    let visitorId;
+    const col = loginMode === 'email' ? 'email' : 'student_id';
+    const { data: existing } = await sb.from('visitors').select('id, is_blocked').eq(col, identifier).maybeSingle();
+
+    if (existing) {
+      if (existing.is_blocked) return showToast('⛔ Your access has been blocked. Please contact the librarian.', true);
+      visitorId = existing.id;
+      // Update college if changed
+      await sb.from('visitors').update({ college_id: collegeRow.id }).eq('id', visitorId);
+    } else {
+      const insertData = { college_id: collegeRow.id };
+      if (loginMode === 'email') insertData.email = identifier;
+      else insertData.student_id = identifier;
+      const { data: newVisitor, error: insertErr } = await sb.from('visitors').insert(insertData).select('id').single();
+      if (insertErr) return showToast('Error registering visitor: ' + insertErr.message, true);
+      visitorId = newVisitor.id;
+    }
+
+    // 3. Log the visit
+    const { error: logErr } = await sb.from('visit_logs').insert({
+      visitor_id: visitorId,
+      college_id: collegeRow.id,
+      purpose: selectedPurpose,
+      login_method: loginMode === 'email' ? 'Email' : 'RFID'
+    });
+    if (logErr) return showToast('Error logging visit: ' + logErr.message, true);
+
+    // 4. Show welcome screen
+    const now = new Date();
+    document.getElementById('welcomeName').textContent = loginMode === 'email'
+      ? identifier.split('@')[0].replace('.', ' ').replace(/\b\w/g, c => c.toUpperCase())
+      : 'Student ' + identifier;
+    document.getElementById('welcomeId').textContent = loginMode === 'rfid' ? 'ID: ' + identifier : identifier;
+    document.getElementById('welcomeCollege').textContent = college;
+    document.getElementById('welcomePurpose').textContent = selectedPurpose;
+    document.getElementById('welcomeTime').textContent = now.toLocaleTimeString('en-PH', {hour:'2-digit', minute:'2-digit', hour12:true});
+    document.getElementById('welcomeDate').textContent = now.toLocaleDateString('en-PH', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+    showPage('page-welcome');
+
+  } catch (err) {
+    showToast('Unexpected error: ' + err.message, true);
   }
-
-  // Log visit
-  const entry = {
-    id: 'v' + Date.now(),
-    name: loginMode === 'email' ? identifier : null,
-    identifier,
-    college,
-    purpose: selectedPurpose,
-    method: loginMode === 'email' ? 'Email' : 'RFID',
-    timestamp: new Date().toISOString(),
-    blocked: false
-  };
-  visitors.unshift(entry);
-  saveData();
-
-  // Show welcome
-  const now = new Date();
-  document.getElementById('welcomeName').textContent = loginMode === 'email' ? identifier.split('@')[0].replace('.', ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Student ' + identifier;
-  document.getElementById('welcomeId').textContent = loginMode === 'rfid' ? 'ID: ' + identifier : identifier;
-  document.getElementById('welcomeCollege').textContent = college;
-  document.getElementById('welcomePurpose').textContent = selectedPurpose;
-  document.getElementById('welcomeTime').textContent = now.toLocaleTimeString('en-PH', {hour:'2-digit', minute:'2-digit', hour12:true});
-  document.getElementById('welcomeDate').textContent = now.toLocaleDateString('en-PH', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
-
-  showPage('page-welcome');
 }
 
 function resetLogin() {
@@ -1170,12 +1171,11 @@ function resetLogin() {
 function handleAdminLogin() {
   const user = document.getElementById('adminUser').value.trim();
   const pass = document.getElementById('adminPass').value;
-  // Simple demo credentials — replace with Supabase auth
   if (user === 'admin' && pass === 'admin123') {
     showPage('page-admin');
     loadDashboard();
   } else {
-    showToast('Invalid credentials. Try admin / admin123', true);
+    showToast('Invalid credentials.', true);
   }
 }
 
@@ -1197,25 +1197,30 @@ function switchSection(name, el) {
   if (name === 'users') renderUsers();
 }
 
-function loadDashboard() {
+async function loadDashboard() {
   const now = new Date();
+  document.getElementById('overviewDate').textContent = now.toLocaleDateString('en-PH', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+
+  // Fetch all visit_logs with college name
+  const { data: logs } = await sb.from('v_visit_logs').select('visited_at, college');
+  if (!logs) return;
+
   const todayStr = now.toDateString();
   const weekAgo = new Date(now - 7*86400000);
   const monthAgo = new Date(now - 30*86400000);
 
-  const todayCount = visitors.filter(v => new Date(v.timestamp).toDateString() === todayStr).length;
-  const weekCount = visitors.filter(v => new Date(v.timestamp) >= weekAgo).length;
-  const monthCount = visitors.filter(v => new Date(v.timestamp) >= monthAgo).length;
+  const todayCount  = logs.filter(v => new Date(v.visited_at).toDateString() === todayStr).length;
+  const weekCount   = logs.filter(v => new Date(v.visited_at) >= weekAgo).length;
+  const monthCount  = logs.filter(v => new Date(v.visited_at) >= monthAgo).length;
 
-  document.getElementById('statToday').textContent = todayCount;
-  document.getElementById('statWeek').textContent = weekCount;
-  document.getElementById('statMonth').textContent = monthCount;
-  document.getElementById('statTotal').textContent = visitors.length;
-  document.getElementById('overviewDate').textContent = now.toLocaleDateString('en-PH', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  document.getElementById('statToday').textContent  = todayCount;
+  document.getElementById('statWeek').textContent   = weekCount;
+  document.getElementById('statMonth').textContent  = monthCount;
+  document.getElementById('statTotal').textContent  = logs.length;
 
   // College breakdown
   const colleges = {};
-  visitors.forEach(v => { colleges[v.college] = (colleges[v.college] || 0) + 1; });
+  logs.forEach(v => { if (v.college) colleges[v.college] = (colleges[v.college] || 0) + 1; });
   const grid = document.getElementById('collegeGrid');
   grid.innerHTML = '';
   const sorted = Object.entries(colleges).sort((a,b) => b[1]-a[1]);
@@ -1229,15 +1234,23 @@ function loadDashboard() {
 }
 
 // ── LOGS ──
-function renderLogs() {
+async function renderLogs() {
   const q = document.getElementById('logSearch').value.toLowerCase();
-  const filtered = visitors.filter(v => {
-    const haystack = [v.identifier, v.college, v.purpose, v.method, formatDate(v.timestamp)].join(' ').toLowerCase();
-    return haystack.includes(q);
-  });
-
   const tbody = document.getElementById('logsTableBody');
   const empty = document.getElementById('logsEmpty');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-light);">Loading...</td></tr>';
+
+  const { data: logs } = await sb.from('v_visit_logs').select('*').order('visited_at', { ascending: false });
+  if (!logs || logs.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = '';
+    return;
+  }
+
+  const filtered = logs.filter(v => {
+    const haystack = [v.email, v.student_id, v.college, v.purpose, v.login_method, formatDate(v.visited_at)].filter(Boolean).join(' ').toLowerCase();
+    return haystack.includes(q);
+  });
 
   if (filtered.length === 0) {
     tbody.innerHTML = '';
@@ -1251,34 +1264,33 @@ function renderLogs() {
   tbody.innerHTML = filtered.map((v, i) => `
     <tr>
       <td style="color:var(--text-light);font-size:0.78rem;">${i+1}</td>
-      <td class="name-cell">${v.identifier}</td>
-      <td style="max-width:200px;font-size:0.8rem;">${v.college}</td>
+      <td class="name-cell">${v.email || v.student_id || '—'}</td>
+      <td style="max-width:200px;font-size:0.8rem;">${v.college || '—'}</td>
       <td><span class="badge ${purposeBadge[v.purpose] || 'badge-green'}">${v.purpose}</span></td>
-      <td style="font-family:'DM Mono',monospace;font-size:0.78rem;">${formatDate(v.timestamp)}</td>
-      <td><span class="badge ${v.method === 'Email' ? 'badge-blue' : 'badge-gold'}">${v.method}</span></td>
+      <td style="font-family:'DM Mono',monospace;font-size:0.78rem;">${formatDate(v.visited_at)}</td>
+      <td><span class="badge ${v.login_method === 'Email' ? 'badge-blue' : 'badge-gold'}">${v.login_method}</span></td>
     </tr>
   `).join('');
 }
 
 // ── USERS ──
-function renderUsers() {
+async function renderUsers() {
   const q = document.getElementById('userSearch').value.toLowerCase();
-
-  // Build unique users from visitor log
-  const userMap = {};
-  visitors.forEach(v => {
-    if (!userMap[v.identifier]) {
-      userMap[v.identifier] = { identifier: v.identifier, college: v.college, lastVisit: v.timestamp, count: 0, blocked: blockedUsers.includes(v.identifier) };
-    }
-    userMap[v.identifier].count++;
-    if (v.timestamp > userMap[v.identifier].lastVisit) userMap[v.identifier].lastVisit = v.timestamp;
-  });
-
-  const all = Object.values(userMap);
-  const filtered = all.filter(u => u.identifier.toLowerCase().includes(q) || u.college.toLowerCase().includes(q));
-
   const tbody = document.getElementById('usersTableBody');
   const empty = document.getElementById('usersEmpty');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-light);">Loading...</td></tr>';
+
+  const { data: users } = await sb.from('v_visitor_summary').select('*');
+  if (!users || users.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = '';
+    return;
+  }
+
+  const filtered = users.filter(u => {
+    const haystack = [u.email, u.student_id, u.college].filter(Boolean).join(' ').toLowerCase();
+    return haystack.includes(q);
+  });
 
   if (filtered.length === 0) {
     tbody.innerHTML = '';
@@ -1289,15 +1301,15 @@ function renderUsers() {
 
   tbody.innerHTML = filtered.map(u => `
     <tr>
-      <td class="name-cell">${u.identifier}</td>
-      <td style="font-size:0.8rem;">${u.college}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:0.78rem;">${formatDate(u.lastVisit)}</td>
-      <td style="text-align:center;">${u.count}</td>
-      <td><span class="badge ${u.blocked ? 'badge-blocked' : 'badge-green'}">${u.blocked ? '⛔ Blocked' : '✓ Active'}</span></td>
+      <td class="name-cell">${u.email || u.student_id || '—'}</td>
+      <td style="font-size:0.8rem;">${u.college || '—'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:0.78rem;">${u.last_visit ? formatDate(u.last_visit) : '—'}</td>
+      <td style="text-align:center;">${u.total_visits}</td>
+      <td><span class="badge ${u.is_blocked ? 'badge-blocked' : 'badge-green'}">${u.is_blocked ? '⛔ Blocked' : '✓ Active'}</span></td>
       <td>
-        ${u.blocked
-          ? `<button class="action-btn btn-unblock" onclick="promptAction('${u.identifier}','unblock')">Unblock</button>`
-          : `<button class="action-btn btn-block" onclick="promptAction('${u.identifier}','block')">Block</button>`
+        ${u.is_blocked
+          ? `<button class="action-btn btn-unblock" onclick="promptAction('${u.id}','${u.email || u.student_id}','unblock')">Unblock</button>`
+          : `<button class="action-btn btn-block" onclick="promptAction('${u.id}','${u.email || u.student_id}','block')">Block</button>`
         }
       </td>
     </tr>
@@ -1305,12 +1317,12 @@ function renderUsers() {
 }
 
 // ── BLOCK/UNBLOCK ──
-function promptAction(userId, action) {
+function promptAction(userId, displayName, action) {
   pendingAction = { userId, action };
   document.getElementById('modalTitle').textContent = action === 'block' ? 'Block User?' : 'Unblock User?';
   document.getElementById('modalText').textContent = action === 'block'
-    ? `This will prevent "${userId}" from logging into the library. You can unblock them at any time.`
-    : `This will restore library access for "${userId}".`;
+    ? `This will prevent "${displayName}" from logging into the library. You can unblock them at any time.`
+    : `This will restore library access for "${displayName}".`;
 
   const btn = document.getElementById('modalConfirmBtn');
   btn.textContent = action === 'block' ? 'Block User' : 'Unblock User';
@@ -1324,17 +1336,22 @@ function closeModal() {
   pendingAction = null;
 }
 
-function confirmAction() {
+async function confirmAction() {
   if (!pendingAction) return;
   const { userId, action } = pendingAction;
-  if (action === 'block') {
-    if (!blockedUsers.includes(userId)) blockedUsers.push(userId);
-    showToast(`User blocked successfully.`);
+  const isBlocking = action === 'block';
+
+  const { error } = await sb.from('visitors').update({
+    is_blocked: isBlocking,
+    blocked_at: isBlocking ? new Date().toISOString() : null
+  }).eq('id', userId);
+
+  if (error) {
+    showToast('Error: ' + error.message, true);
   } else {
-    blockedUsers = blockedUsers.filter(u => u !== userId);
-    showToast(`User unblocked successfully.`);
+    showToast(isBlocking ? 'User blocked successfully.' : 'User unblocked successfully.');
   }
-  saveData();
+
   closeModal();
   renderUsers();
   loadDashboard();
