@@ -933,27 +933,9 @@
 <!-- ════════════════════════════════════════════════════════════ -->
 
 <!-- ════════════════════════════════════════════════════════════ -->
-<!-- SUPABASE CONFIG - YOUR ACTUAL CREDENTIALS INSERTED BELOW    -->
+<!-- PAGE: LANDING (CHOOSE STUDENT OR ADMIN)                      -->
 <!-- ════════════════════════════════════════════════════════════ -->
-<script>
-// ════════════════════════════════════════════════════════════
-// 🔑 YOUR SUPABASE CREDENTIALS
-// ════════════════════════════════════════════════════════════
-const SUPABASE_URL = 'https://qkkgmxpzwdhixcbqwhqf.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFra2dteHB6d2RoaXhjYnF3aHFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxNDIxMDcsImV4cCI6MjA4ODcxODEwN30.fmA0cLTVEskzQay3GwV2pJDmTurypIKNRB22NsmWJUs';
-
-// Initialize Supabase client
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-// ════════════════════════════════════════════════════════════
-// NETLIFY URL (for reference)
-// ════════════════════════════════════════════════════════════
-const NETLIFY_URL = 'https://69b95eeae3cc850ddbb9aaa3--incomparable-pegasus-379983.netlify.app/';
-
-// ════════════════════════════════════════════════════════════
-// STATE
-// ════════════════════════════════════════════════════════════
-let loginMode = 'email';
-let selectedPurpose = '';
-let pendingAction = null;
-let currentUserRole = null; // 'student'
+<div id="page-landing" class="page active">
+  <div class="landing-card">
+    <div class="landing-logo">
+      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAoAAAAKACAYAAAD1bBbIAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABmJLRUQA/wD/AP+gvaeTAAAAB3RJTUUH5gEDCgwyN1SasAAAgABJREFUeF7svQm0bVlZJvrNtfbep7n9bdqLgqIoCiiKAKmQSkpKSiqVSmJ5Y2k8o5SM5zwzRl73pUaNqFHRp6I8oyhF7UQsRRHbl6IgCi3atC9t09z+3HPP3nuvNef/jzHnN79vrbX3uV0QN/i/c7PO3WvNOf/5G9/3fb8x55x7C1tbW7C2toZisYBlt9vRbDZhd3d3sG1bGB0dhUqlAqZpwjAM6O/vh/7+flAUBZ
