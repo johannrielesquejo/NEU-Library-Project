@@ -1,1 +1,4 @@
-https://johannrielesquejo.github.io/NEU-Library-Project/#
+https://incomparable-pegasus-379983.netlify.app
+admin credentials:
+user: admin
+password: admin123
