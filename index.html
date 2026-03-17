@@ -786,156 +786,59 @@
   tbody td { padding: 13px 18px; color: var(--text-mid); }
   tbody td.name-cell { font-weight: 600; color: var(--text-dark); }
 
-  .badge {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.03em;
-  }
-  .badge-green { background: #e8f5eb; color: var(--green); }
-  .badge-gold { background: #fff8e1; color: #b8860b; }
-  .badge-red { background: #ffeef0; color: var(--red); }
-  .badge-blue { background: #e8f0ff; color: #2d5be3; }
-  .badge-blocked { background: #ffeef0; color: var(--red); }
-  .badge-employee { background: #f0e8ff; color: #6b2db8; }
-
-  .action-btn {
-    padding: 5px 12px;
-    border-radius: 6px;
-    border: none;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.76rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .btn-block { background: #ffeef0; color: var(--red); }
-  .btn-block:hover { background: var(--red); color: #fff; }
-  .btn-unblock { background: #e8f5eb; color: var(--green); }
-  .btn-unblock:hover { background: var(--green); color: #fff; }
-
-  /* Notification toast */
-  .toast {
-    position: fixed;
-    bottom: 32px;
-    right: 32px;
-    background: var(--green-dark);
-    color: #fff;
-    padding: 14px 22px;
-    border-radius: 12px;
-    font-size: 0.88rem;
-    font-weight: 500;
-    box-shadow: var(--shadow-md);
-    z-index: 9999;
-    transform: translateY(100px);
-    opacity: 0;
-    transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  }
-  .toast.show { transform: translateY(0); opacity: 1; }
-  .toast.error { background: var(--red); }
-
-  /* Modal */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s;
-  }
-  .modal-overlay.open { opacity: 1; pointer-events: all; }
-  .modal {
-    background: #fff;
-    border-radius: 20px;
-    padding: 40px;
-    max-width: 400px;
-    width: 90%;
-    box-shadow: var(--shadow-lg);
-    transform: scale(0.9);
-    transition: transform 0.2s;
-  }
-  .modal-overlay.open .modal { transform: scale(1); }
-  .modal h3 {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.3rem;
-    margin-bottom: 10px;
-    color: var(--text-dark);
-  }
-  .modal p { font-size: 0.88rem; color: var(--text-light); margin-bottom: 24px; line-height: 1.5; }
-  .modal-actions { display: flex; gap: 10px; }
-  .btn-cancel {
-    flex: 1; padding: 11px;
-    border: 1.5px solid var(--border);
-    border-radius: 8px;
-    background: #fff;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.88rem;
-    font-weight: 600;
-    cursor: pointer;
-    color: var(--text-mid);
-    transition: all 0.2s;
-  }
-  .btn-cancel:hover { background: var(--cream); }
-  .btn-confirm-block {
-    flex: 1; padding: 11px;
-    border: none;
-    border-radius: 8px;
-    background: var(--red);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.88rem;
-    font-weight: 600;
-    cursor: pointer;
-    color: #fff;
-    transition: all 0.2s;
-  }
-  .btn-confirm-block:hover { background: #a93226; }
-  .btn-confirm-unblock {
-    flex: 1; padding: 11px;
-    border: none;
-    border-radius: 8px;
-    background: var(--green);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.88rem;
-    font-weight: 600;
-    cursor: pointer;
-    color: #fff;
-    transition: all 0.2s;
-  }
-  .btn-confirm-unblock:hover { background: var(--green-dark); }
-
-  .empty-state {
-    text-align: center;
-    padding: 48px;
-    color: var(--text-light);
-  }
-  .empty-state svg { width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.3; }
-  .empty-state p { font-size: 0.88rem; }
-
-  /* Responsive */
-  @media (max-width: 768px) {
-    .sidebar { display: none; }
-    .login-card, .admin-login-card { padding: 36px 28px; }
-    .admin-main { padding: 20px 16px; }
-    .stat-grid { grid-template-columns: 1fr 1fr; }
-  }
 </style>
 </head>
 <body>
 
-<!-- ════════════════════════════════════════════════════════════ -->
-<!-- NETLIFY URL: https://69b95eeae3cc850ddbb9aaa3--incomparable-pegasus-379983.netlify.app/ -->
-<!-- ════════════════════════════════════════════════════════════ -->
-
-<!-- ════════════════════════════════════════════════════════════ -->
-<!-- PAGE: LANDING (CHOOSE STUDENT OR ADMIN)                      -->
-<!-- ════════════════════════════════════════════════════════════ -->
-<div id="page-landing" class="page active">
+<div id="page-landing" class="page">
   <div class="landing-card">
     <div class="landing-logo">
-      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAoAAAAKACAYAAAD1bBbIAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABmJLRUQA/wD/AP+gvaeTAAAAB3RJTUUH5gEDCgwyN1SasAAAgABJREFUeF7svQm0bVlZJvrNtfbep7n9bdqLgqIoCiiKAKmQSkpKSiqVSmJ5Y2k8o5SM5zwzRl73pUaNqFHRp6I8oyhF7UQsRRHbl6IgCi3atC9t09z+3HPP3nuvNef/jzHnN79vrbX3uV0QN/i/c7PO3WvNOf/5G9/3fb8x55x7C1tbW7C2toZisYBlt9vRbDZhd3d3sG1bGB0dhUqlAqZpwjAM6O/vh/7+flAUBZ
+      <h2>NEU Library</h2>
+      <p>Visitor Log System</p>
+    </div>
+    <div class="role-selection">
+      <button class="role-btn" onclick="showPage('page-login')">
+        <span class="role-title">Visitor</span>
+        <p class="role-desc">Log your visit</p>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="page-login" class="page">
+  <div class="login-card">
+    <button class="back-link" onclick="showPage('page-landing')">← Back</button>
+    <h2>Visitor Log-in</h2>
+    <div class="form-group" style="margin-top:20px;">
+        <button class="btn-primary" onclick="signInWithGoogle()">Sign in with Google</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // FIX 1: Supabase Credentials
+  const supabaseUrl = 'https://sttcsqzdsldopyogxnrf.supabase.co';
+  const supabaseKey = 'sb_publishable_kGXNOcXSeR9fEOEecW6bqg_UAsi48';
+  const sb = supabase.createClient(supabaseUrl, supabaseKey);
+
+  // Function to switch visible pages
+  function showPage(pageId) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const target = document.getElementById(pageId);
+    if (target) target.classList.add('active');
+  }
+
+  // Handle Google Sign-in
+  async function signInWithGoogle() {
+    await sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.href }
+    });
+  }
+
+  // FIX 2: Initialize the first view
+  showPage('page-landing');
+</script>
+
+</body>
+</html>
