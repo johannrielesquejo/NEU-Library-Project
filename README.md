@@ -1,4 +1,4 @@
 https://neu-library-project.vercel.app
-admin credentials:
+admin credentials -
 user: admin
 password: admin123
