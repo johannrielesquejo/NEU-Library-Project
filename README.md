@@ -1,4 +1,4 @@
-https://incomparable-pegasus-379983.netlify.app
+https://neu-library-project.vercel.app
 admin credentials:
 user: admin
 password: admin123
