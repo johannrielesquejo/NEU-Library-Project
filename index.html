@@ -290,6 +290,28 @@
     font-size: 0.78rem;
     color: var(--text-light);
   }
+  .google-signin-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: #fff;
+    color: #3c4043;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  }
+  .google-signin-btn:hover {
+    background: #f8f9fa;
+    border-color: #bbb;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    transform: translateY(-1px);
+  }
 
   /* ══════════════════════════════════════
      WELCOME PAGE
@@ -840,8 +862,18 @@
     </div>
 
     <button class="btn-primary" onclick="handleVisitorLogin()">Log In to Library</button>
-    <div class="login-hint">
-      Admin? <a href="#" onclick="showPage('page-admin-login')" style="color:var(--green);font-weight:600;text-decoration:none;">Click here</a>
+    <div class="login-hint" style="margin-top:20px;">
+      <button onclick="handleGoogleAdminLogin()" class="google-signin-btn">
+        <svg width="18" height="18" viewBox="0 0 48 48" style="flex-shrink:0;">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          <path fill="none" d="M0 0h48v48H0z"/>
+        </svg>
+        Sign in with Google
+      </button>
+      <div id="googleSigninError" style="display:none;color:#c0392b;font-size:0.78rem;margin-top:8px;text-align:center;"></div>
     </div>
   </div>
 </div>
@@ -863,29 +895,6 @@
   </div>
 </div>
 
-<!-- ════════════════════════════════
-     PAGE: ADMIN LOGIN
-════════════════════════════════ -->
-<div id="page-admin-login" class="page">
-  <div class="admin-login-card">
-    <h2>Admin Access</h2>
-    <p>Sign in with your administrator credentials to manage library records.</p>
-    <div class="form-group">
-      <label>Username</label>
-      <input type="text" id="adminUser" placeholder="admin">
-    </div>
-    <div class="form-group">
-      <label>Password</label>
-      <input type="password" id="adminPass" placeholder="••••••••">
-    </div>
-    <button class="btn-primary" onclick="handleAdminLogin()">Sign In</button>
-    <div style="text-align:center;margin-top:16px;">
-      <a class="back-link" onclick="showPage('page-login')">
-        ← Back to Visitor Login
-      </a>
-    </div>
-  </div>
-</div>
 
 <!-- ════════════════════════════════
      PAGE: ADMIN DASHBOARD
@@ -1166,24 +1175,55 @@ function resetLogin() {
 }
 
 // ════════════════════════════════════════
-// ADMIN LOGIN
+// ADMIN LOGIN — Google OAuth via Supabase
 // ════════════════════════════════════════
-function handleAdminLogin() {
-  const user = document.getElementById('adminUser').value.trim();
-  const pass = document.getElementById('adminPass').value;
-  if (user === 'admin' && pass === 'admin123') {
-    showPage('page-admin');
-    loadDashboard();
-  } else {
-    showToast('Invalid credentials.', true);
+
+// List of allowed admin emails — add your Google email(s) here
+const ADMIN_DOMAIN = 'neu.edu.ph';
+
+async function handleGoogleAdminLogin() {
+  const errEl = document.getElementById('googleSigninError');
+  errEl.style.display = 'none';
+
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.href, // returns back to this same page
+    }
+  });
+
+  if (error) {
+    errEl.textContent = 'Sign-in failed: ' + error.message;
+    errEl.style.display = 'block';
   }
 }
 
-function handleLogout() {
-  document.getElementById('adminUser').value = '';
-  document.getElementById('adminPass').value = '';
+async function checkAdminSession() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return;
+
+  const email = session.user?.email;
+  if (email && email.endsWith('@' + ADMIN_DOMAIN)) {
+    showPage('page-admin');
+    loadDashboard();
+  } else {
+    // Signed in but not an admin — sign them out
+    await sb.auth.signOut();
+    const errEl = document.getElementById('googleSigninError');
+    errEl.textContent = `Access denied: ${email} is not an @neu.edu.ph account.`;
+    errEl.style.display = 'block';
+  }
+}
+
+async function handleLogout() {
+  await sb.auth.signOut();
   showPage('page-login');
 }
+
+// Check for OAuth redirect on page load
+window.addEventListener('load', () => {
+  checkAdminSession();
+});
 
 // ════════════════════════════════════════
 // ADMIN DASHBOARD
