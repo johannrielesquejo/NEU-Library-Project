@@ -50,13 +50,5 @@ A modern library management web application developed as part of the Information
 
 ---
 
-## 🛠 Installation & Local Setup
-
-To run this project locally, follow these steps:
-
-1. **Clone the repository:**
-   ```bash
-   git clone [https://github.com/johannrielesquejo/NEU-Library-Project.git](https://github.com/johannrielesquejo/NEU-Library-Project.git)
-
 https://neu-library-project.vercel.app
 
